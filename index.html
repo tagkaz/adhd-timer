@@ -968,6 +968,9 @@
             switchScreen('break-screen');
             initAudio();
             playBeep('start');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(timerTick, 1000);
         }
 
         function addBreakTime(mins) {
