@@ -330,6 +330,33 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        /* ============== Memo Display Box ============== */
+        .memo-display-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px dashed #ffeb3b;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 800px;
+            width: 90%;
+            text-align: left;
+        }
+
+        .memo-display-label {
+            color: #ffeb3b;
+            font-size: 24px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .memo-display-text {
+            color: #fff;
+            font-size: 32px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
         /* ============== Summary Modal ============== */
         #summary-modal {
             position: fixed;
@@ -591,6 +618,12 @@
             <button class="btn-summary" id="btn-summary" onclick="showSummary()">📊 本日の成果</button>
             <button class="btn-settings" id="btn-settings" onclick="showSettings()">⚙️ 設定</button>
         </div>
+
+        <div id="main-memo-box" class="memo-display-box" style="display: none; margin-top: 0; margin-bottom: 3vh; border-color: #64b5f6;">
+            <div class="memo-display-label" style="color: #64b5f6;">📝 前回のメモ（次やること）</div>
+            <div id="main-memo-text" class="memo-display-text"></div>
+        </div>
+
         <button class="btn-roulette" id="btn-roulette">決められない時（開始）</button>
     </div>
 
@@ -612,6 +645,12 @@
     <div id="break-screen" class="screen">
         <h1 id="break-title">休憩中</h1>
         <div id="break-timer-display">05:00</div>
+        
+        <div id="break-memo-box" class="memo-display-box" style="display: none;">
+            <div class="memo-display-label">📝 次やること</div>
+            <div id="break-memo-text" class="memo-display-text"></div>
+        </div>
+
         <div class="break-buttons">
             <button class="btn-extend" onclick="addBreakTime(2)">+ 2分</button>
             <button class="btn-extend" onclick="addBreakTime(5)">+ 5分</button>
@@ -747,6 +786,9 @@
             });
             document.getElementById('btn-stop').addEventListener('click', showMemoModal);
             document.getElementById('btn-to-break').addEventListener('click', startBreak);
+
+            // メモの表示更新
+            updateMemoDisplay();
         }
 
         // ================= Task Management =================
@@ -940,6 +982,26 @@
         }
 
         // ================= Event Handlers =================
+        function updateMemoDisplay() {
+            const memo = localStorage.getItem('adhd_timer_last_memo');
+            const breakBox = document.getElementById('break-memo-box');
+            const mainBox = document.getElementById('main-memo-box');
+            
+            if (memo) {
+                if (document.getElementById('break-memo-text')) {
+                    document.getElementById('break-memo-text').innerText = memo;
+                }
+                if (document.getElementById('main-memo-text')) {
+                    document.getElementById('main-memo-text').innerText = memo;
+                }
+                if (breakBox) breakBox.style.display = 'block';
+                if (mainBox) mainBox.style.display = 'block';
+            } else {
+                if (breakBox) breakBox.style.display = 'none';
+                if (mainBox) mainBox.style.display = 'none';
+            }
+        }
+
         function showMemoModal() {
             // 作業ログを記録
             if (workStartedAt && currentTaskName) {
@@ -960,7 +1022,10 @@
             const memo = document.getElementById('memo-input').value.trim();
             if (memo) {
                 localStorage.setItem('adhd_timer_last_memo', memo);
+            } else {
+                localStorage.removeItem('adhd_timer_last_memo');
             }
+            updateMemoDisplay();
 
             isWorkPhase = false;
             remainingSeconds = getBreakTime();
