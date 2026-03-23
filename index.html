@@ -1,0 +1,958 @@
+<!-- 
+  ==============================================================
+  ADHD特化型・強制着手タイマー (配布用バージョン)
+  
+  【説明】
+  このファイルは配布用に作成されたバージョンです。
+  ユーザーが初めて利用する際に先入観を持たないよう、
+  デフォルトの具体的なタスク名（初期入力値）を削り、
+  空欄（プレースホルダーのみ）の状態で開始するように調整されています。
+  ダブルクリックでブラウザで開くだけですぐに利用可能です。
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD特化型・強制着手タイマー</title>
+    <style>
+        /* CSS reset & base settings */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Screens */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .break-mode {
+            background-color: #1a4a20;
+        }
+
+        /* 休憩用の緑背景 */
+
+        /* ============== Main Screen Layout ============== */
+        #main-screen {
+            max-width: 1400px;
+            margin: 0 auto;
+            justify-content: flex-start;
+            padding-top: 5vh;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .task-slot {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #222;
+            padding: 15px 25px;
+            border-radius: 16px;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .task-slot:focus-within {
+            background: #333;
+            transform: scale(1.02);
+        }
+
+        .task-slot input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 36px;
+            font-weight: bold;
+            outline: none;
+            min-width: 0;
+        }
+
+        .task-slot input::placeholder {
+            color: #666;
+            font-size: 30px;
+        }
+
+        .btn-remove {
+            background: transparent;
+            color: #888;
+            border: none;
+            font-size: 40px;
+            cursor: pointer;
+            padding: 0 10px;
+            transition: 0.2s;
+        }
+
+        .btn-remove:hover {
+            color: #ff5252;
+            transform: scale(1.2);
+        }
+
+        .btn-start-direct {
+            background: #444;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-start-direct:hover {
+            background: #666;
+        }
+
+        .controls-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .btn-add-task {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px dashed #666;
+            padding: 15px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-add-task:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+
+        .btn-add-task:disabled {
+            background: transparent;
+            color: #444;
+            border-color: #333;
+            cursor: not-allowed;
+        }
+
+        .btn-roulette {
+            background: #d32f2f;
+            color: #fff;
+            border: none;
+            padding: 50px 80px;
+            font-size: 80px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 15px 0 #9a0007;
+            transition: 0.1s;
+            width: 100%;
+            text-align: center;
+            letter-spacing: 5px;
+            margin-top: auto;
+            margin-bottom: 5vh;
+        }
+
+        .btn-roulette:active {
+            transform: translateY(15px);
+            box-shadow: 0 0 0 #9a0007;
+        }
+
+        /* ============== Timer Screen Layout ============== */
+        #task-display {
+            font-size: 8vw;
+            text-align: center;
+            margin-bottom: 20px;
+            line-height: 1.2;
+            padding: 0 20px;
+            word-break: break-word;
+            color: #e0e0e0;
+        }
+
+        #timer-display {
+            font-size: 25vw;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            user-select: none;
+        }
+
+        .time-over {
+            color: #ff9800 !important;
+        }
+
+        .btn-stop {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 25px 80px;
+            font-size: 50px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-top: 50px;
+            transition: 0.2s;
+        }
+
+        .btn-stop:hover {
+            background: #555;
+        }
+
+        /* ============== Memo Modal ============== */
+        #memo-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #memo-modal.active {
+            display: flex;
+        }
+
+        #memo-modal h2 {
+            font-size: 60px;
+            margin-bottom: 40px;
+            color: #ffeb3b;
+        }
+
+        #memo-input {
+            width: 80%;
+            max-width: 1000px;
+            height: 200px;
+            font-size: 50px;
+            padding: 30px;
+            background: #222;
+            color: #fff;
+            border: 3px solid #555;
+            border-radius: 16px;
+            margin-bottom: 50px;
+            font-weight: bold;
+            resize: none;
+            outline: none;
+        }
+
+        #memo-input:focus {
+            border-color: #ffeb3b;
+        }
+
+        .btn-to-break {
+            background: #4caf50;
+            color: #fff;
+            border: none;
+            padding: 30px 80px;
+            font-size: 50px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 10px 0 #2e7d32;
+            transition: 0.1s;
+        }
+
+        .btn-to-break:active {
+            transform: translateY(10px);
+            box-shadow: 0 0 0 #2e7d32;
+        }
+
+        /* ============== Break Screen Layout ============== */
+        #break-title {
+            font-size: 6vw;
+            margin-bottom: 20px;
+            color: #a5d6a7;
+        }
+
+        #break-timer-display {
+            font-size: 25vw;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            user-select: none;
+        }
+
+        .break-buttons {
+            display: flex;
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .btn-extend {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 3px solid #fff;
+            padding: 30px 60px;
+            font-size: 50px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-extend:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ============== Summary Modal ============== */
+        #summary-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.97);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #summary-modal.active {
+            display: flex;
+        }
+
+        #summary-modal h2 {
+            font-size: 50px;
+            margin-bottom: 30px;
+            color: #64b5f6;
+        }
+
+        #summary-content {
+            width: 80%;
+            max-width: 900px;
+            max-height: 60vh;
+            overflow-y: auto;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 30px 40px;
+            margin-bottom: 30px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 10px;
+            border-bottom: 1px solid #333;
+            font-size: 36px;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+
+        .summary-task-name {
+            color: #e0e0e0;
+            flex: 1;
+            margin-right: 20px;
+            word-break: break-word;
+        }
+
+        .summary-time {
+            color: #64b5f6;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 10px;
+            font-size: 42px;
+            color: #ffeb3b;
+            border-top: 3px solid #ffeb3b;
+            margin-top: 10px;
+        }
+
+        .summary-empty {
+            text-align: center;
+            font-size: 30px;
+            color: #666;
+            padding: 40px 0;
+        }
+
+        .btn-close-summary {
+            background: #333;
+            color: #fff;
+            border: none;
+            padding: 20px 60px;
+            font-size: 36px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-close-summary:hover {
+            background: #555;
+        }
+
+        .btn-summary {
+            background: rgba(100, 181, 246, 0.15);
+            color: #64b5f6;
+            border: 2px solid #64b5f6;
+            padding: 12px 30px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-summary:hover {
+            background: rgba(100, 181, 246, 0.3);
+        }
+
+        .btn-reset-log {
+            background: transparent;
+            color: #888;
+            border: 1px solid #555;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 15px;
+        }
+
+        .btn-reset-log:hover {
+            color: #ff5252;
+            border-color: #ff5252;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ================= Main Screen ================= -->
+    <div id="main-screen" class="screen active">
+        <div class="grid-container" id="task-slots">
+            <!-- タスクスロットがJSで生成されます -->
+        </div>
+        <div class="controls-row" style="gap: 20px;">
+            <button class="btn-add-task" id="btn-add-task" onclick="addTask()">＋ タスクを追加 (最大6個)</button>
+            <button class="btn-summary" id="btn-summary" onclick="showSummary()">📊 本日の成果</button>
+        </div>
+        <button class="btn-roulette" id="btn-roulette">決められない時（開始）</button>
+    </div>
+
+    <!-- ================= Timer Screen ================= -->
+    <div id="timer-screen" class="screen">
+        <div id="task-display">ミッション名</div>
+        <div id="timer-display">25:00</div>
+        <button class="btn-stop" id="btn-stop">■ ストップ</button>
+    </div>
+
+    <!-- ================= Memo Modal (Over Timer Screen) ================= -->
+    <div id="memo-modal">
+        <h2>次の一歩をメモして脳を空にする</h2>
+        <textarea id="memo-input" placeholder="次は何から始めるか...（例：Aの資料を探す）"></textarea>
+        <button class="btn-to-break" id="btn-to-break">休憩開始</button>
+    </div>
+
+    <!-- ================= Break Screen ================= -->
+    <div id="break-screen" class="screen">
+        <h1 id="break-title">休憩中</h1>
+        <div id="break-timer-display">05:00</div>
+        <div class="break-buttons">
+            <button class="btn-extend" onclick="addBreakTime(2)">+ 2分</button>
+            <button class="btn-extend" onclick="addBreakTime(5)">+ 5分</button>
+            <button class="btn-extend" onclick="endBreakEarly()">終了して戻る</button>
+        </div>
+    </div>
+
+    <!-- ================= Summary Modal ================= -->
+    <div id="summary-modal">
+        <h2>📊 本日の成果</h2>
+        <div id="summary-content"></div>
+        <button class="btn-close-summary" onclick="closeSummary()">閉じる</button>
+        <button class="btn-reset-log" onclick="resetLog()">ログをリセット</button>
+    </div>
+
+    <!-- ================= Logic ================= -->
+    <script>
+        // 設定値 (本番用)
+        const WORK_TIME = 25 * 60; // 25分
+        const BREAK_TIME = 5 * 60; // 5分
+
+        // 状態
+        let tasks = ['']; // デフォルトは1つの空タスク枠
+        const MAX_TASKS = 6;
+        let timerInterval;
+        let remainingSeconds = WORK_TIME;
+        let isWorkPhase = true;
+        let currentTaskName = '';
+        let workStartedAt = null; // 作業開始時刻（ミリ秒）
+
+        // ================= Web Audio API =================
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playBeep(type) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'start') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'overtime') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 0.5);
+
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.type = 'sawtooth';
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.frequency.setValueAtTime(880, audioCtx.currentTime + 0.6);
+                osc2.frequency.setValueAtTime(660, audioCtx.currentTime + 0.8);
+                gain2.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.6);
+                gain2.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.1);
+                osc2.start(audioCtx.currentTime + 0.6);
+                osc2.stop(audioCtx.currentTime + 1.1);
+            } else if (type === 'break-end') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2); // E5
+                osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.4); // G5
+                osc.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.6); // C6
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.2);
+                osc.start(audioCtx.currentTime);
+                osc.stop(audioCtx.currentTime + 1.2);
+            }
+        }
+
+        // ================= Initialization =================
+        function initApp() {
+            // ローカルストレージからの読み込み
+            const saved = localStorage.getItem('adhd_timer_tasks_public');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        tasks = parsed;
+                    }
+                } catch (e) { }
+            }
+            renderTaskSlots();
+
+            // イベントリスナーの登録
+            document.getElementById('btn-roulette').addEventListener('click', () => {
+                initAudio();
+                startRoulette();
+            });
+            document.getElementById('btn-stop').addEventListener('click', showMemoModal);
+            document.getElementById('btn-to-break').addEventListener('click', startBreak);
+        }
+
+        // ================= Task Management =================
+        function saveTasks() {
+            localStorage.setItem('adhd_timer_tasks_public', JSON.stringify(tasks));
+        }
+
+        function addTask() {
+            if (tasks.length < MAX_TASKS) {
+                tasks.push('');
+                saveTasks();
+                renderTaskSlots();
+
+                // 新しい入力欄にフォーカス
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('.task-slot input');
+                    if (inputs.length > 0) inputs[inputs.length - 1].focus();
+                }, 50);
+            }
+        }
+
+        function removeTask(index) {
+            if (tasks.length > 1) {
+                tasks.splice(index, 1);
+                saveTasks();
+                renderTaskSlots();
+            }
+        }
+
+        function renderTaskSlots() {
+            const container = document.getElementById('task-slots');
+            container.innerHTML = '';
+
+            // ＋追加 ボタンの状態切替
+            const addBtn = document.getElementById('btn-add-task');
+            if (tasks.length >= MAX_TASKS) {
+                addBtn.disabled = true;
+                addBtn.innerText = '最大数 (6個) に達しています';
+            } else {
+                addBtn.disabled = false;
+                addBtn.innerText = '＋ タスクを追加 (最大6個)';
+            }
+            // 要素が1つの場合グリッドを中央に寄せるためのスタイル調整
+            if (tasks.length === 1) {
+                container.style.gridTemplateColumns = '1fr';
+                container.style.maxWidth = '700px';
+                container.style.margin = '0 auto 20px auto';
+            } else {
+                container.style.gridTemplateColumns = '1fr 1fr';
+                container.style.maxWidth = '100%';
+                container.style.margin = '0 0 20px 0';
+            }
+
+            for (let i = 0; i < tasks.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'task-slot';
+
+                // 削除(✖)ボタン
+                if (tasks.length > 1) {
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn-remove';
+                    removeBtn.innerHTML = '×';
+                    removeBtn.title = 'タスクを削除';
+                    removeBtn.addEventListener('click', () => removeTask(i));
+                    slot.appendChild(removeBtn);
+                }
+
+                // 入力欄
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `タスクを入力...`;
+                input.value = tasks[i] || '';
+
+                // 入力時の自動保存
+                input.addEventListener('input', (e) => {
+                    tasks[i] = e.target.value;
+                    saveTasks();
+                });
+
+                slot.appendChild(input);
+
+                // 個別の開始ボタン
+                const btn = document.createElement('button');
+                btn.className = 'btn-start-direct';
+                btn.innerText = '開始 ▶';
+                btn.addEventListener('click', () => {
+                    initAudio();
+                    const taskName = input.value.trim() || `名称未設定タスク`;
+                    startWorkTimer(taskName);
+                });
+
+                slot.appendChild(btn);
+                container.appendChild(slot);
+            }
+        }
+
+        // ================= Roulette Logic =================
+        function startRoulette() {
+            // 文字が明示的に入力されているタスクのみをフィルタリング
+            const validTasks = tasks.map(t => t.trim()).filter(t => t !== '');
+
+            if (validTasks.length === 0) {
+                alert('少なくとも1つタスクを入力してください！');
+                return;
+            }
+
+            // ルーレットの演出
+            let counter = 0;
+            const rouletteBtn = document.getElementById('btn-roulette');
+            const originalText = rouletteBtn.innerText;
+
+            // ボタンを無効化して連打を防ぐ
+            rouletteBtn.disabled = true;
+
+            const rInterval = setInterval(() => {
+                rouletteBtn.innerText = validTasks[Math.floor(Math.random() * validTasks.length)];
+                counter++;
+
+                if (counter > 15) { // 演出終了
+                    clearInterval(rInterval);
+                    const selected = validTasks[Math.floor(Math.random() * validTasks.length)];
+                    rouletteBtn.innerText = originalText;
+                    rouletteBtn.disabled = false;
+                    startWorkTimer(selected);
+                }
+            }, 60);
+        }
+
+        // ================= Utilities =================
+        function formatTime(totalSeconds) {
+            const isNegative = totalSeconds < 0;
+            const absSec = Math.abs(totalSeconds);
+            const m = Math.floor(absSec / 60).toString().padStart(2, '0');
+            const s = (absSec % 60).toString().padStart(2, '0');
+            return isNegative ? `-${m}:${s}` : `${m}:${s}`;
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+
+            if (screenId === 'break-screen') {
+                document.body.classList.add('break-mode');
+            } else {
+                document.body.classList.remove('break-mode');
+            }
+        }
+
+        // ================= Timer Logic =================
+        function startWorkTimer(taskName) {
+            currentTaskName = taskName;
+            document.getElementById('task-display').innerText = currentTaskName;
+            document.getElementById('timer-display').classList.remove('time-over');
+
+            remainingSeconds = WORK_TIME;
+            workStartedAt = Date.now(); // 作業開始時刻を記録
+            updateTimerDisplay();
+            switchScreen('timer-screen');
+            playBeep('start');
+
+            clearInterval(timerInterval);
+            isWorkPhase = true;
+            timerInterval = setInterval(timerTick, 1000);
+        }
+
+        function timerTick() {
+            remainingSeconds--;
+
+            if (isWorkPhase) {
+                if (remainingSeconds === 0) {
+                    document.getElementById('timer-display').classList.add('time-over');
+                    playBeep('overtime');
+                }
+                document.getElementById('timer-display').innerText = formatTime(remainingSeconds);
+            } else {
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    finishBreak();
+                } else {
+                    document.getElementById('break-timer-display').innerText = formatTime(remainingSeconds);
+                }
+            }
+        }
+
+        function updateTimerDisplay() {
+            if (isWorkPhase) {
+                document.getElementById('timer-display').innerText = formatTime(remainingSeconds);
+            } else {
+                document.getElementById('break-timer-display').innerText = formatTime(remainingSeconds);
+            }
+        }
+
+        // ================= Event Handlers =================
+        function showMemoModal() {
+            // 作業ログを記録
+            if (workStartedAt && currentTaskName) {
+                const workedSeconds = Math.round((Date.now() - workStartedAt) / 1000);
+                saveWorkLog(currentTaskName, workedSeconds);
+                workStartedAt = null;
+            }
+            clearInterval(timerInterval);
+
+            document.getElementById('memo-modal').classList.add('active');
+            document.getElementById('memo-input').value = '';
+            document.getElementById('memo-input').focus();
+        }
+
+        function startBreak() {
+            document.getElementById('memo-modal').classList.remove('active');
+
+            const memo = document.getElementById('memo-input').value.trim();
+            if (memo) {
+                localStorage.setItem('adhd_timer_last_memo', memo);
+            }
+
+            isWorkPhase = false;
+            remainingSeconds = BREAK_TIME;
+            updateTimerDisplay();
+            switchScreen('break-screen');
+            initAudio();
+            playBeep('start');
+        }
+
+        function addBreakTime(mins) {
+            remainingSeconds += mins * 60;
+            updateTimerDisplay();
+        }
+
+        function endBreakEarly() {
+            remainingSeconds = 0;
+            timerTick();
+        }
+
+        function finishBreak() {
+            playBeep('break-end');
+            switchScreen('main-screen');
+        }
+
+        // ================= Work Log (日次集計) =================
+        function getTodayKey() {
+            const now = new Date();
+            return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
+
+        function getWorkLogs() {
+            const data = localStorage.getItem('adhd_timer_work_logs');
+            if (!data) return {};
+            try {
+                return JSON.parse(data);
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveWorkLog(taskName, seconds) {
+            const logs = getWorkLogs();
+            const todayKey = getTodayKey();
+
+            // 古い日付のログを削除 (今日以外)
+            for (const key of Object.keys(logs)) {
+                if (key !== todayKey) {
+                    delete logs[key];
+                }
+            }
+
+            if (!logs[todayKey]) {
+                logs[todayKey] = [];
+            }
+            logs[todayKey].push({
+                task: taskName,
+                seconds: seconds,
+                timestamp: Date.now()
+            });
+
+            localStorage.setItem('adhd_timer_work_logs', JSON.stringify(logs));
+        }
+
+        function formatMinSec(totalSeconds) {
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            if (h > 0) {
+                return `${h}時間${m}分`;
+            }
+            return `${m}分`;
+        }
+
+        function showSummary() {
+            const logs = getWorkLogs();
+            const todayKey = getTodayKey();
+            const todayLogs = logs[todayKey] || [];
+            const container = document.getElementById('summary-content');
+
+            if (todayLogs.length === 0) {
+                container.innerHTML = '<div class="summary-empty">まだ作業記録がありません。<br>タイマーを使って作業を始めましょう！</div>';
+            } else {
+                // タスク名ごとに合計
+                const taskTotals = {};
+                let grandTotal = 0;
+                for (const log of todayLogs) {
+                    if (!taskTotals[log.task]) {
+                        taskTotals[log.task] = 0;
+                    }
+                    taskTotals[log.task] += log.seconds;
+                    grandTotal += log.seconds;
+                }
+
+                let html = '';
+                for (const [task, seconds] of Object.entries(taskTotals)) {
+                    html += `<div class="summary-row">
+                        <span class="summary-task-name">${escapeHtml(task)}</span>
+                        <span class="summary-time">${formatMinSec(seconds)}</span>
+                    </div>`;
+                }
+                html += `<div class="summary-total">
+                    <span>合計</span>
+                    <span>${formatMinSec(grandTotal)}</span>
+                </div>`;
+
+                container.innerHTML = html;
+            }
+
+            document.getElementById('summary-modal').classList.add('active');
+        }
+
+        function closeSummary() {
+            document.getElementById('summary-modal').classList.remove('active');
+        }
+
+        function resetLog() {
+            if (confirm('本日の作業ログをリセットしますか？')) {
+                const logs = getWorkLogs();
+                const todayKey = getTodayKey();
+                delete logs[todayKey];
+                localStorage.setItem('adhd_timer_work_logs', JSON.stringify(logs));
+                showSummary(); // 画面を更新
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // DOMロード後に初期化
+        window.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+</body>
+
+</html>
