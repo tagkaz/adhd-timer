@@ -460,6 +460,122 @@
             color: #ff5252;
             border-color: #ff5252;
         }
+
+        /* ============== Settings Modal ============== */
+        #settings-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.97);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #settings-modal.active {
+            display: flex;
+        }
+
+        #settings-modal h2 {
+            font-size: 50px;
+            margin-bottom: 30px;
+            color: #aaa;
+        }
+
+        .settings-content {
+            width: 80%;
+            max-width: 600px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+        }
+
+        .settings-label {
+            font-size: 30px;
+            color: #e0e0e0;
+        }
+
+        .settings-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-input-group input {
+            width: 80px;
+            font-size: 30px;
+            font-weight: bold;
+            text-align: center;
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 10px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .settings-input-group input:focus {
+            border-color: #aaa;
+        }
+
+        .settings-input-group span {
+            font-size: 24px;
+            color: #888;
+        }
+
+        .btn-save-settings {
+            background: #4caf50;
+            color: #fff;
+            border: none;
+            padding: 20px 60px;
+            font-size: 36px;
+            font-weight: bold;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 6px 0 #2e7d32;
+        }
+
+        .btn-save-settings:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #2e7d32;
+        }
+
+        .btn-settings {
+            background: rgba(255, 255, 255, 0.08);
+            color: #888;
+            border: 2px solid #555;
+            padding: 12px 30px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn-settings:hover {
+            color: #fff;
+            border-color: #aaa;
+            background: rgba(255, 255, 255, 0.15);
+        }
     </style>
 </head>
 
@@ -473,6 +589,7 @@
         <div class="controls-row" style="gap: 20px;">
             <button class="btn-add-task" id="btn-add-task" onclick="addTask()">＋ タスクを追加 (最大6個)</button>
             <button class="btn-summary" id="btn-summary" onclick="showSummary()">📊 本日の成果</button>
+            <button class="btn-settings" id="btn-settings" onclick="showSettings()">⚙️ 設定</button>
         </div>
         <button class="btn-roulette" id="btn-roulette">決められない時（開始）</button>
     </div>
@@ -510,11 +627,33 @@
         <button class="btn-reset-log" onclick="resetLog()">ログをリセット</button>
     </div>
 
+    <!-- ================= Settings Modal ================= -->
+    <div id="settings-modal">
+        <h2>⚙️ 設定</h2>
+        <div class="settings-content">
+            <div class="settings-row">
+                <span class="settings-label">作業時間</span>
+                <div class="settings-input-group">
+                    <input type="number" id="setting-work-min" min="1" max="120" value="25">
+                    <span>分</span>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-label">休憩時間</span>
+                <div class="settings-input-group">
+                    <input type="number" id="setting-break-min" min="1" max="60" value="5">
+                    <span>分</span>
+                </div>
+            </div>
+        </div>
+        <button class="btn-save-settings" onclick="saveSettings()">保存</button>
+    </div>
+
     <!-- ================= Logic ================= -->
     <script>
-        // 設定値 (本番用)
-        const WORK_TIME = 25 * 60; // 25分
-        const BREAK_TIME = 5 * 60; // 5分
+        // 設定値（localStorageから復元、なければデフォルト）
+        let WORK_TIME = 25 * 60; // 25分
+        let BREAK_TIME = 5 * 60; // 5分
 
         // 状態
         let tasks = ['']; // デフォルトは1つの空タスク枠
@@ -586,6 +725,9 @@
 
         // ================= Initialization =================
         function initApp() {
+            // 設定の復元
+            loadSettings();
+
             // ローカルストレージからの読み込み
             const saved = localStorage.getItem('adhd_timer_tasks_public');
             if (saved) {
@@ -759,7 +901,7 @@
             document.getElementById('task-display').innerText = currentTaskName;
             document.getElementById('timer-display').classList.remove('time-over');
 
-            remainingSeconds = WORK_TIME;
+            remainingSeconds = getWorkTime();
             workStartedAt = Date.now(); // 作業開始時刻を記録
             updateTimerDisplay();
             switchScreen('timer-screen');
@@ -821,7 +963,7 @@
             }
 
             isWorkPhase = false;
-            remainingSeconds = BREAK_TIME;
+            remainingSeconds = getBreakTime();
             updateTimerDisplay();
             switchScreen('break-screen');
             initAudio();
@@ -947,6 +1089,54 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // ================= Settings (設定) =================
+        function getWorkTime() {
+            return WORK_TIME;
+        }
+
+        function getBreakTime() {
+            return BREAK_TIME;
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('adhd_timer_settings');
+            if (saved) {
+                try {
+                    const s = JSON.parse(saved);
+                    if (s.workMin && s.workMin >= 1 && s.workMin <= 120) {
+                        WORK_TIME = s.workMin * 60;
+                    }
+                    if (s.breakMin && s.breakMin >= 1 && s.breakMin <= 60) {
+                        BREAK_TIME = s.breakMin * 60;
+                    }
+                } catch (e) { }
+            }
+        }
+
+        function showSettings() {
+            document.getElementById('setting-work-min').value = Math.round(WORK_TIME / 60);
+            document.getElementById('setting-break-min').value = Math.round(BREAK_TIME / 60);
+            document.getElementById('settings-modal').classList.add('active');
+        }
+
+        function saveSettings() {
+            const workMin = parseInt(document.getElementById('setting-work-min').value) || 25;
+            const breakMin = parseInt(document.getElementById('setting-break-min').value) || 5;
+
+            const clampedWork = Math.max(1, Math.min(120, workMin));
+            const clampedBreak = Math.max(1, Math.min(60, breakMin));
+
+            WORK_TIME = clampedWork * 60;
+            BREAK_TIME = clampedBreak * 60;
+
+            localStorage.setItem('adhd_timer_settings', JSON.stringify({
+                workMin: clampedWork,
+                breakMin: clampedBreak
+            }));
+
+            document.getElementById('settings-modal').classList.remove('active');
         }
 
         // DOMロード後に初期化
